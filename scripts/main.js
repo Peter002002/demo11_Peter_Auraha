@@ -1,3 +1,20 @@
+var currentUser;
+firebase.auth().onAuthStateChanged(user => {
+    if (user) {
+        currentUser = db.collection("users").doc(user.uid);   //global
+        console.log(currentUser);
+
+        // the following functions are always called when someone is logged in
+        read_display_Quote();
+        insertName();
+        populateCardsDynamically();
+    } else {
+        // No user is signed in.
+        console.log("No user is signed in");
+        window.location.href = "login.html";
+    }
+});
+
 function read_display_Quote() {
   //console.log("inside the function")
 
@@ -12,22 +29,15 @@ function read_display_Quote() {
 }
 read_display_Quote();
 
+// Insert name function using the global variable "currentUser"
 function insertName() {
-  // to check if the user is logged in:
-  firebase.auth().onAuthStateChanged((user) => {
-    if (user) {
-      console.log(user.uid); // let me to know who is the user that logged in to get the UID
-      currentUser = db.collection("users").doc(user.uid); // will to to the firestore and go to the document of the user
-      currentUser.get().then((userDoc) => {
-        //get the user name
-        var user_Name = userDoc.data().name;
-        console.log(user_Name);
-        $("#name-goes-here").text(user_Name); //jquery
-        // document.getElementByID("name-goes-here").innetText=user_Name;
-      });
-    }
-
- })
+  currentUser.get().then(userDoc => {
+      //get the user name
+      var user_Name = userDoc.data().name;
+      console.log(user_Name);
+      $("#name-goes-here").text(user_Name); //jquery
+      // document.getElementByID("name-goes-here").innetText=user_Name;
+  })
 }
 insertName();
 
@@ -94,3 +104,25 @@ populateCardsDynamically();
 function setHikeData(id){
     localStorage.setItem ('hikeID', id);
 }
+
+
+//-----------------------------------------------------------------------------
+// This function is called whenever the user clicks on the "bookmark" icon.
+// It adds the hike to the "bookmarks" array
+// Then it will change the bookmark icon from the hollow to the solid version. 
+//-----------------------------------------------------------------------------
+function saveBookmark(hikeID) {
+  currentUser.set({
+          bookmarks: firebase.firestore.FieldValue.arrayUnion(hikeID)
+      }, {
+          merge: true
+      })
+      .then(function () {
+          console.log("bookmark has been saved for: " + currentUser);
+          var iconID = 'save-' + hikeID;
+          //console.log(iconID);
+          //this is to change the icon of the hike that was saved to "filled"
+          document.getElementById(iconID).innerText = 'bookmark';
+      });
+}
+saveBookmark()
